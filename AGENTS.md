@@ -1,8 +1,9 @@
 # AGENTS.md
 
 Guidance for coding agents working on this repository. `docs/PROJECT.md` holds
-the requirements and is the source of truth for what to build. This file holds
-how we build it, the decisions already made, and what is still open.
+the requirements and is the source of truth for what to build. `docs/plan.md`
+holds the MVP build plan. This file holds how we build it, the decisions
+already made, and what is still open.
 
 ## Stack
 
@@ -63,6 +64,7 @@ infrastructure/   docker, postgres
 n8n/workflows     n8n workflow definitions
 docs/             architecture, database, api, deployment notes
 docs/PROJECT.md   requirements baseline
+docs/plan.md      MVP build plan
 docker-compose.yml
 ```
 
