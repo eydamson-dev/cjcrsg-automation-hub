@@ -2,7 +2,7 @@
   "name": "social-manager",
   "version": "0.1.0",
   "private": true,
-  "description": "Self-hosted Facebook publishing platform (dashboard + API + n8n)",
+  "description": "Self-hosted Facebook publishing platform: dashboard, API, and n8n",
   "packageManager": "pnpm@10.27.0",
   "engines": {
     "node": ">=20"

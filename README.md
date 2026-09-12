@@ -1,11 +1,11 @@
 # Social Manager
 
-Self-hosted Facebook publishing platform: a custom admin dashboard (Next.js) + an
-application API (AdonisJS) + n8n automation, deployed on Proxmox via Docker and
-exposed through Cloudflare Tunnel.
+Self-hosted Facebook publishing platform. A custom admin dashboard in Next.js,
+an application API in AdonisJS, and n8n for automation. Deployed on Proxmox
+with Docker and exposed through Cloudflare Tunnel.
 
-See `docs/PROJECT.md` for the full requirements baseline and `AGENTS.md` for the
-decided conventions and open items.
+`docs/PROJECT.md` holds the requirements. `AGENTS.md` holds the conventions and
+open items.
 
 ## Layout
 
@@ -24,7 +24,7 @@ docs/             architecture, database, api, deployment notes
 
 ```bash
 pnpm install
-cp .env.example .env   # then fill in secrets
+cp .env.example .env   # fill in the secrets
 docker compose up -d postgres n8n
 pnpm dev:api
 pnpm dev:web

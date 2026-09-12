@@ -15,9 +15,9 @@ services:
       timeout: 5s
       retries: 5
 
-  # TODO(M1): api (AdonisJS + Prisma) — add Dockerfile + service entry
-  # TODO(M1): web (Next.js) — add Dockerfile + service entry
-  # TODO(M1): cloudflared — Cloudflare Tunnel exposing web + n8n
+  # TODO(M1): api, AdonisJS and Prisma. Add a Dockerfile and service entry.
+  # TODO(M1): web, Next.js. Add a Dockerfile and service entry.
+  # TODO(M1): cloudflared. Cloudflare Tunnel to expose web and n8n.
 
   n8n:
     image: n8nio/n8n:latest
