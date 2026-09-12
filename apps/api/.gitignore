@@ -1,0 +1,24 @@
+# Dependencies and AdonisJS build
+node_modules
+build
+tmp/*
+!tmp/.gitkeep
+.adonisjs
+
+# Generated Prisma client
+generated
+
+# Secrets
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Logs
+*.log
+
+# Editors
+.fleet
+.idea
+.vscode
+.DS_Store

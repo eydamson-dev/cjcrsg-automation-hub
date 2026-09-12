@@ -11,9 +11,9 @@ already made, and what is still open.
 | --- | --- | --- |
 | Monorepo | pnpm workspaces | decided |
 | Frontend | Next.js, App Router, latest stable | decided |
-| Backend | AdonisJS in TypeScript | decided |
+| Backend | AdonisJS v7 in TypeScript | decided |
 | Database | PostgreSQL 16 | decided |
-| ORM | Prisma | decided, non-standard for AdonisJS |
+| ORM | Prisma 7 | decided, non-standard for AdonisJS |
 | Auth | email and password, Argon2id, server-side sessions, HttpOnly cookies | decided |
 | Storage | local filesystem via `FilesystemStorage` | decided for v1 |
 | Automation | self-hosted n8n | decided |
@@ -26,6 +26,19 @@ AdonisJS normally pairs with its own ORM, Lucid, and the auth layer in
 `@adonisjs/auth` expects Lucid models. Prisma is the data layer here, so auth
 and sessions are built directly on Prisma instead of Adonis Guard. Do not add
 Lucid or `@adonisjs/auth`. Prisma stays the single data-access layer.
+
+Prisma 7 specifics that are easy to forget:
+
+- The generated client lives at `apps/api/generated/prisma` (gitignored). Run
+  `pnpm db:generate` after schema changes.
+- A driver adapter is required. The app uses `@prisma/adapter-pg` with `pg`.
+- Database URL and migrations paths live in `apps/api/prisma.config.ts`, not
+  the schema datasource block. The schema datasource keeps only `provider`.
+- `importFileExtension = "js"` in the generator so the generated imports match
+  AdonisJS's `.js` import convention.
+
+AdonisJS v7 requires Node 24. The dev machine uses fnm; set it with
+`fnm use 24` before `pnpm dev:api`. The container already runs `node:24-alpine`.
 
 ## Roles
 
@@ -47,6 +60,7 @@ pnpm -r lint
 pnpm -r typecheck
 pnpm db:generate    # prisma generate
 pnpm db:migrate     # prisma migrate deploy
+pnpm db:migrate:dev # prisma migrate dev (local, creates migrations)
 ```
 
 These commands are placeholders until the apps are scaffolded in M2 and M4.

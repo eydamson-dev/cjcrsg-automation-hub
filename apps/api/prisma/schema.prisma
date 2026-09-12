@@ -1,0 +1,290 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../generated/prisma"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+enum PostType {
+  BIBLE_VERSE
+  IMAGE
+}
+
+enum PostStatus {
+  DRAFT
+  READY
+  PROCESSING
+  DESIGN_READY
+  APPROVED
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  CANCELLED
+  ARCHIVED
+}
+
+enum StorageProvider {
+  local
+}
+
+enum AssetRole {
+  SOURCE_IMAGE
+  GENERATED_IMAGE
+  PREVIEW
+  ATTACHMENT
+}
+
+enum SocialProvider {
+  FACEBOOK
+}
+
+enum PublicationStatus {
+  PENDING
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
+enum JobType {
+  GENERATE_DESIGN
+  EXPORT_DESIGN
+  PUBLISH_FACEBOOK
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  role          Role      @default(EDITOR)
+  isActive      Boolean   @default(true) @map("is_active")
+  lastLoginAt   DateTime? @map("last_login_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  postsCreated  Post[]    @relation("posts_created")
+  postsUpdated  Post[]    @relation("posts_updated")
+  assetsCreated Asset[]   @relation("assets_created")
+  sessions      Session[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  tokenHash  String   @unique @map("token_hash")
+  expiresAt  DateTime @map("expires_at")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Post {
+  id          String     @id @default(uuid()) @db.Uuid
+  type        PostType
+  status      PostStatus @default(DRAFT)
+  title       String?
+  caption     String?
+  scheduledAt DateTime?  @map("scheduled_at")
+  createdBy   String?    @map("created_by") @db.Uuid
+  updatedBy   String?    @map("updated_by") @db.Uuid
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  creator     User?       @relation("posts_created", fields: [createdBy], references: [id])
+  updater     User?       @relation("posts_updated", fields: [updatedBy], references: [id])
+  bibleVerse  BibleVersePost?
+  postAssets  PostAsset[]
+  publications PostPublication[]
+  jobs        PublishingJob[]
+
+  @@index([status])
+  @@index([type])
+  @@map("posts")
+}
+
+model BibleVersePost {
+  postId      String @id @map("post_id") @db.Uuid
+  translation String
+  book        String
+  chapter     Int
+  verseStart  Int    @map("verse_start")
+  verseEnd    Int    @map("verse_end")
+  verseText   String @map("verse_text")
+
+  post        Post   @relation(fields: [postId], references: [id])
+
+  @@map("bible_verse_posts")
+}
+
+model Asset {
+  id              String          @id @default(uuid()) @db.Uuid
+  filename        String
+  mimeType        String          @map("mime_type")
+  sizeBytes       Int             @map("size_bytes")
+  storageProvider StorageProvider @default(local) @map("storage_provider")
+  storageKey      String          @map("storage_key")
+  width           Int?
+  height          Int?
+  sha256          String?
+  createdBy       String?         @map("created_by") @db.Uuid
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  creator         User?           @relation("assets_created", fields: [createdBy], references: [id])
+  postAssets      PostAsset[]
+  templateThumbnails CanvaTemplate[]
+
+  @@index([storageKey])
+  @@map("assets")
+}
+
+model PostAsset {
+  postId    String    @map("post_id") @db.Uuid
+  assetId   String    @map("asset_id") @db.Uuid
+  role      AssetRole
+  sortOrder Int       @default(0) @map("sort_order")
+
+  post      Post      @relation(fields: [postId], references: [id])
+  asset     Asset     @relation(fields: [assetId], references: [id])
+
+  @@id([postId, assetId])
+  @@map("post_assets")
+}
+
+model CanvaTemplate {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String
+  type             PostType
+  canvaTemplateId  String?  @map("canva_template_id")
+  canvaDesignId    String?  @map("canva_design_id")
+  thumbnailAssetId String?  @map("thumbnail_asset_id") @db.Uuid
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  thumbnail        Asset?   @relation(fields: [thumbnailAssetId], references: [id])
+
+  @@map("canva_templates")
+}
+
+model SocialAccount {
+  id                    String         @id @default(uuid()) @db.Uuid
+  provider              SocialProvider
+  accountName           String?        @map("account_name")
+  accessTokenEncrypted  String?        @map("access_token_encrypted")
+  refreshTokenEncrypted String?        @map("refresh_token_encrypted")
+  tokenExpiresAt        DateTime?      @map("token_expires_at")
+  metadata              Json?
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+
+  pages                 SocialPage[]
+
+  @@map("social_accounts")
+}
+
+model SocialPage {
+  id              String         @id @default(uuid()) @db.Uuid
+  socialAccountId String         @map("social_account_id") @db.Uuid
+  provider        SocialProvider
+  externalPageId  String         @map("external_page_id")
+  name            String?
+  metadata        Json?
+  isActive        Boolean        @default(true) @map("is_active")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  account         SocialAccount  @relation(fields: [socialAccountId], references: [id])
+  publications    PostPublication[]
+
+  @@index([socialAccountId])
+  @@map("social_pages")
+}
+
+model PostPublication {
+  id             String            @id @default(uuid()) @db.Uuid
+  postId         String            @map("post_id") @db.Uuid
+  socialPageId   String            @map("social_page_id") @db.Uuid
+  status         PublicationStatus @default(PENDING)
+  externalPostId String?           @unique @map("external_post_id")
+  externalUrl    String?           @map("external_url")
+  publishedAt    DateTime?         @map("published_at")
+  errorCode      String?           @map("error_code")
+  errorMessage   String?           @map("error_message")
+  idempotencyKey String?           @unique @map("idempotency_key")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  post           Post              @relation(fields: [postId], references: [id])
+  socialPage     SocialPage        @relation(fields: [socialPageId], references: [id])
+  jobs           PublishingJob[]
+
+  @@index([postId])
+  @@map("post_publications")
+}
+
+model PublishingJob {
+  id             String     @id @default(uuid()) @db.Uuid
+  postId         String     @map("post_id") @db.Uuid
+  publicationId  String?    @map("publication_id") @db.Uuid
+  jobType        JobType    @map("job_type")
+  status         JobStatus  @default(PENDING)
+  attempts       Int        @default(0)
+  maxAttempts    Int        @default(5) @map("max_attempts")
+  n8nExecutionId String?    @map("n8n_execution_id")
+  lastError      String?    @map("last_error")
+  idempotencyKey String?    @map("idempotency_key")
+  startedAt      DateTime?  @map("started_at")
+  completedAt    DateTime?  @map("completed_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  post           Post       @relation(fields: [postId], references: [id])
+  publication    PostPublication? @relation(fields: [publicationId], references: [id])
+
+  @@index([postId])
+  @@index([status])
+  @@map("publishing_jobs")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id") @db.Uuid
+  metadata   Json?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([action])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}

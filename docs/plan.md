@@ -17,12 +17,12 @@ live in `docs/PROJECT.md`. Decisions and guardrails live in `AGENTS.md`.
 
 ### M1 - Foundation + containerized dev loop
 
-- Scaffold AdonisJS v6 with the slim kit. No Lucid, no `@adonisjs/auth`.
-  Add Prisma by hand.
+- Scaffold AdonisJS v7 by hand. No Lucid, no `@adonisjs/auth`. Add Prisma 7
+  with the `@prisma/adapter-pg` driver adapter and `prisma.config.ts`.
 - Full `schema.prisma` for all section 7 tables, with the schema corrections
   baked in. First migration.
-- `apps/api` Dockerfile. Extend `docker-compose.yml` so `api` runs against
-  `postgres` for dev. `pnpm dev:api` still works natively.
+- `apps/api` Dockerfile and an `api` service in `docker-compose.yml` that runs
+  against `postgres`. `pnpm dev:api` works natively too.
 
 Exit: `docker compose up api` boots and migrates cleanly.
 
