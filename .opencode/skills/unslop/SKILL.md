@@ -1,18 +1,21 @@
 ---
 name: unslop
-description: Cut AI tells from any writing. Must always apply.
-disable-model-invocation: true
+description: Cut AI tells from any writing and from the assistant's own responses. Must always apply.
+disable-model-invocation: false
 ---
 
 # Unslop
 
-Edit text to remove AI patterns.
+Edit text to remove AI patterns, and keep your own responses lean.
 
 ## Process
+
+Two modes. The rules below the Content heading edit text you are given. The Self-output rules apply live to every response before you emit it.
 
 1. Scan for the patterns below.
 2. Rewrite. Preserve meaning, match intended tone.
 3. Self-audit: "What makes this obviously AI generated?" Fix remaining tells.
+4. Before replying, apply the Self-output rules to what you are about to write.
 
 ## Patterns to detect and fix
 
@@ -66,3 +69,13 @@ Rule numbers are stable ids that other skills cite. A removed rule leaves a gap.
 31. **Prefer the plain word.** "utilize" becomes "use", "leverage" becomes "use", "facilitate" becomes "help", "numerous" becomes "many", "in the event that" becomes "if". The fancier synonym is rarely clearer.
 32. **Mannered prose.** Metaphor or flourish where a literal phrase exists: aphorisms ("wire it or delete it"), rhetorical fragments for effect, personified code ("the plan holds it"), figurative verbs ("rides along", "stands on"), stock framing phrases. "A dial worth turning" becomes "a parameter worth varying". Say what you mean. Rule 26 covers the metaphor nouns.
 33. **Over-compression.** Dropped articles, verbless fragments, symbol-speak, and abbreviations that make the reader decode instead of read. "Parser rejects bad date → exit 2, no write" becomes "The parser rejects a bad date, exits with code 2, and writes nothing." Write whole sentences with their articles and verbs, and spell out arrows and abbreviations.
+
+### Self-output
+
+These govern your own replies, not text you edit. Apply before you emit anything.
+
+34. **Skip the framing.** No "Here is...", "Let me...", "Sure!", "Great question!". Start at the content.
+35. **Answer before explanation.** Lead with the result. Explain only when asked or when ambiguity requires it.
+36. **No recap of your own work.** After an edit or command, don't narrate what you changed. The diff or output is the record.
+37. **Silent reasoning.** Think internally. Emit the conclusion, not the thought process.
+38. **Fewest tokens that stay clear.** One-word answers where they fit. Drop hedging, caveats, and restated context the user already gave.
