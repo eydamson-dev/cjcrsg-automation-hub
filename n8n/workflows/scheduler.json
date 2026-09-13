@@ -1,0 +1,128 @@
+{
+  "name": "Scheduler (due posts -> enqueue)",
+  "nodes": [
+    {
+      "id": "scheduler-trigger",
+      "name": "Every 60 seconds",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-1180, 0],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 60
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "scheduler-sign-due",
+      "name": "Sign: fetch due posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [-940, 0],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst secret = $env.INTERNAL_API_SECRET;\nconst path = '/api/v1/internal/scheduler/due';\nconst method = 'GET';\nconst timestamp = Math.floor(Date.now()/1000).toString();\nconst requestId = crypto.randomUUID();\nconst canonical = [method, path, timestamp, requestId, ''].join('\\n');\nconst signature = crypto.createHmac('sha256', secret).update(canonical).digest('hex');\nreturn [{ json: { path, headers: { 'X-Signature': signature, 'X-Timestamp': timestamp, 'X-Request-Id': requestId, 'Content-Type': 'application/json' } } }];"
+      }
+    },
+    {
+      "id": "scheduler-due",
+      "name": "Fetch due posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-700, 0],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.N8N_API_BASE + $json.path }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Signature", "value": "={{ $json.headers['X-Signature'] }}" },
+            { "name": "X-Timestamp", "value": "={{ $json.headers['X-Timestamp'] }}" },
+            { "name": "X-Request-Id", "value": "={{ $json.headers['X-Request-Id'] }}" }
+          ]
+        },
+        "options": { "neverError": true }
+      }
+    },
+    {
+      "id": "scheduler-route",
+      "name": "Route due posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [-460, 0],
+      "parameters": {
+        "jsCode": "const body = ($json.body && $json.body.items) || [];\nif (body.length === 0) {\n  return [];\n}\nreturn body.map((post) => ({ json: { path: '/api/v1/internal/scheduler/enqueue', body: { postId: post.id } } }));"
+      }
+    },
+    {
+      "id": "scheduler-sign-enqueue",
+      "name": "Sign: enqueue",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [-220, 0],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst secret = $env.INTERNAL_API_SECRET;\nconst path = $json.path;\nconst body = $json.body || {};\nconst method = 'POST';\nconst stable = (v) => {\n  if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';\n  if (v && typeof v === 'object') {\n    return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + stable(v[k])).join(',') + '}';\n  }\n  return JSON.stringify(v);\n};\nconst canonicalBody = Object.keys(body).length > 0 ? stable(body) : '';\nconst timestamp = Math.floor(Date.now()/1000).toString();\nconst requestId = crypto.randomUUID();\nconst canonical = [method, path, timestamp, requestId, canonicalBody].join('\\n');\nconst signature = crypto.createHmac('sha256', secret).update(canonical).digest('hex');\nreturn [{ json: { path, body, headers: { 'X-Signature': signature, 'X-Timestamp': timestamp, 'X-Request-Id': requestId, 'Content-Type': 'application/json' } } }];"
+      }
+    },
+    {
+      "id": "scheduler-enqueue",
+      "name": "Enqueue publish job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [20, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_API_BASE + $json.path }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Signature", "value": "={{ $json.headers['X-Signature'] }}" },
+            { "name": "X-Timestamp", "value": "={{ $json.headers['X-Timestamp'] }}" },
+            { "name": "X-Request-Id", "value": "={{ $json.headers['X-Request-Id'] }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": { "neverError": true }
+      }
+    },
+    {
+      "id": "scheduler-log",
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [260, 0],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Every 60 seconds": {
+      "main": [[{ "node": "Sign: fetch due posts", "type": "main", "index": 0 }]]
+    },
+    "Sign: fetch due posts": {
+      "main": [[{ "node": "Fetch due posts", "type": "main", "index": 0 }]]
+    },
+    "Fetch due posts": {
+      "main": [[{ "node": "Route due posts", "type": "main", "index": 0 }]]
+    },
+    "Route due posts": {
+      "main": [[{ "node": "Sign: enqueue", "type": "main", "index": 0 }]]
+    },
+    "Sign: enqueue": {
+      "main": [[{ "node": "Enqueue publish job", "type": "main", "index": 0 }]]
+    },
+    "Enqueue publish job": {
+      "main": [[{ "node": "Done", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

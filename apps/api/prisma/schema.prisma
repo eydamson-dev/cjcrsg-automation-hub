@@ -111,6 +111,7 @@ model Post {
   title       String?
   caption     String?
   scheduledAt DateTime?  @map("scheduled_at")
+  publishedAt DateTime?  @map("published_at")
   templateId  String?    @map("template_id") @db.Uuid
   createdBy   String?    @map("created_by") @db.Uuid
   updatedBy   String?    @map("updated_by") @db.Uuid

@@ -6,9 +6,11 @@ through a state machine, design is generated against Canva templates, and n8n
 publishes to Facebook with idempotent retries. Deployed on your own hardware
 with Docker and exposed through Cloudflare Tunnel.
 
-Current status: milestones M1 through M4 are built. Auth, the full post API,
-and the dashboard work end-to-end. Publishing execution and design generation
-are wired against mocks in M5. See `docs/plan.md` and `docs/handoff.md`.
+Current status: milestones M1 through M5 are built. Auth, the full post API,
+and the dashboard work end-to-end. Design generation and publishing run through
+HMAC-signed internal endpoints driven by n8n (installed from `n8n/workflows`);
+both accept mocks. Real Canva and Meta are deferred. See `docs/plan.md` and
+`docs/handoff.md`.
 
 ## What it does
 
@@ -76,6 +78,7 @@ Required values:
 | `.env` | `APP_KEY` | Encryption key. Generate: `node -e "console.log('base64:'+require('crypto').randomBytes(32).toString('base64'))"` |
 | `.env` | `POSTGRES_PASSWORD` | Postgres password (also used in the DATABASE_URLs) |
 | `.env` | `N8N_ENCRYPTION_KEY` | n8n's key; any long random string |
+| `.env` | `INTERNAL_API_SECRET` | Shared HMAC secret for n8n → API calls (set the same value in `apps/api/.env` if you run the API locally) |
 | `.env` / `apps/api/.env` | `DATABASE_URL` | Point both at the same Postgres instance, e.g. `postgresql://social_manager:change-me@localhost:5432/cjcrsg_social_manager?schema=public` |
 | `apps/api/.env` | `APP_KEY` | Same value as the root `.env` `APP_KEY` |
 | `apps/api/.env` | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | Credentials for `pnpm db:seed` |
@@ -126,6 +129,31 @@ docker compose exec -e SEED_ALLOWED=true api node apps/api/build/bin/console.js 
 
 Open `http://localhost:3000`. The `web` image bakes the API origin at build
 time via the `API_URL` build arg; Compose already passes it.
+
+## n8n automation (M5, mocks)
+
+n8n receives jobs and reports results over HMAC-signed internal endpoints. It
+never holds application data; the API is authoritative.
+
+```bash
+docker compose up -d --build api n8n
+infrastructure/scripts/import-n8n.sh   # imports n8n/workflows into the container
+```
+
+Then activate the imported workflows in n8n (`http://localhost:5678`): the
+`design`, `publish`, and `scheduler` workflows poll every 30/60 seconds. With
+the `retry` workflow (manual trigger) you can report a job failure by posting
+`{ jobId, code?, message? }`.
+
+To watch a publish fail then auto-retry and succeed without a duplicate, set the
+mock knobs before starting the stack and re-activate the workflows:
+
+```bash
+MOCK_FACEBOOK_FAIL_ON_ATTEMPT=2 docker compose up -d --build api
+```
+
+Now a publish retries after 1 minute, succeeds on the second attempt, and honors
+the 1m/5m/30m-then-manual backoff afterwards. `0` (the default) always succeeds.
 
 ## Running tests
 

@@ -38,6 +38,10 @@ services:
       STORAGE_ROOT: /data/social-manager
       SESSION_COOKIE_NAME: sm_session
       SESSION_LIFETIME: ${SESSION_LIFETIME:-30}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?set INTERNAL_API_SECRET in .env}
+      INTERNAL_API_TIMESTAMP_WINDOW: ${INTERNAL_API_TIMESTAMP_WINDOW:-300}
+      MOCK_DESIGN_FAIL_ON_ATTEMPT: ${MOCK_DESIGN_FAIL_ON_ATTEMPT:-0}
+      MOCK_FACEBOOK_FAIL_ON_ATTEMPT: ${MOCK_FACEBOOK_FAIL_ON_ATTEMPT:-0}
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@example.com}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-change-me}
     volumes:
@@ -79,8 +83,12 @@ services:
       # n8n keeps its own DB; it must NOT share application tables.
       DB_TYPE: sqlite
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}
+      # Signed requests to the application API
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?set INTERNAL_API_SECRET in .env}
+      N8N_API_BASE: http://api:3333
     volumes:
       - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/workflows:ro
     ports:
       - "5678:5678"
 

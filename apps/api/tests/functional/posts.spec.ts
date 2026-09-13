@@ -193,7 +193,7 @@ test.group('Posts', (group) => {
     assert.equal(res.body().code, 'E_INVALID_TRANSITION')
   })
 
-  test('design stub moves READY to DESIGN_READY and records the template', async ({
+  test('design queues a GENERATE_DESIGN job and moves the post to PROCESSING', async ({
     client,
     assert,
   }) => {
@@ -216,8 +216,10 @@ test.group('Posts', (group) => {
       .json({ templateId: template.id })
 
     res.assertStatus(200)
-    assert.equal(res.body().status, 'DESIGN_READY')
+    assert.equal(res.body().status, 'PROCESSING')
     assert.equal(res.body().templateId, template.id)
+    assert.equal(res.body().jobs[0].jobType, 'GENERATE_DESIGN')
+    assert.equal(res.body().jobs[0].status, 'PENDING')
   })
 
   test('design rejects a template of the wrong type', async ({ client }) => {

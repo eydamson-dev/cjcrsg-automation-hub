@@ -54,15 +54,21 @@ Exit: full post lifecycle callable over HTTP and validated by schemas.
 Exit: manual create, save, approve, schedule flow works against the API,
 containerized.
 
-### M5 - n8n + internal API + mock providers
+### M5 - n8n + internal API + mock providers (done)
 
-- HMAC-signed internal endpoints under `/internal/jobs/*`.
-- Mock Canva and mock Facebook providers.
-- n8n workflows: design generation, publish, scheduler (60s), retry.
+- HMAC-signed internal endpoints under `/internal/jobs/*` (protocol decided:
+  canonical JSON-body signing, ±300s window, headers `X-Signature`,
+  `X-Timestamp`, `X-Request-Id`).
+- Mock Canva and mock Facebook providers behind the service abstractions.
+- n8n workflows: design generation, publish, scheduler (60s), retry — import via
+  `infrastructure/scripts/import-n8n.sh`.
 - Idempotency key and dedupe on `external_post_id`.
+- Backoff/retry policy implemented at claim time (`app/domain/retry_policy.ts`):
+  1m/5m/30m then manual, at most 5 attempts. `posts.published_at` added as the
+  denormalized first-publication cache.
 
-Exit: `DRAFT` through `PUBLISHED` end-to-end against mocks. Retry produces no
-duplicate.
+Exit met: `DRAFT` through `PUBLISHED` end-to-end against mocks over real HTTP
+(functional suite), retry produces no duplicate.
 
 ### M6 - Ops + release
 

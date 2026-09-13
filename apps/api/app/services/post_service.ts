@@ -257,38 +257,55 @@ export class PostService {
       })
     }
 
-    if (existing.status === 'DRAFT') {
-      assertTransition(existing.status, 'READY')
+    let status = existing.status
+    if (status === 'DRAFT') {
+      assertTransition(status, 'READY')
       await prisma.post.update({
         where: { id },
         data: { status: 'READY', updatedBy: actor.user.id },
       })
+      status = 'READY'
     }
 
-    const ready = await prisma.post.findUniqueOrThrow({ where: { id } })
-    assertTransition(ready.status, 'PROCESSING')
-    const processing = await prisma.post.update({
-      where: { id },
-      data: { status: 'PROCESSING', templateId, updatedBy: actor.user.id },
-    })
-    assertTransition(processing.status, 'DESIGN_READY')
+    const failedDesignJob =
+      status === 'PROCESSING'
+        ? await prisma.publishingJob.findFirst({
+            where: { postId: id, jobType: 'GENERATE_DESIGN', status: 'FAILED' },
+          })
+        : null
 
-    const post = await prisma.post.update({
-      where: { id },
-      data: { status: 'DESIGN_READY', updatedBy: actor.user.id },
-      include: postDetailInclude,
-    })
+    if (status === 'PROCESSING' && !failedDesignJob) {
+      assertTransition(status, 'PROCESSING')
+    } else if (status !== 'PROCESSING') {
+      assertTransition(status, 'PROCESSING')
+      await prisma.post.update({
+        where: { id },
+        data: { status: 'PROCESSING', templateId, updatedBy: actor.user.id },
+      })
+      status = 'PROCESSING'
+    } else {
+      await prisma.post.update({
+        where: { id },
+        data: { templateId, updatedBy: actor.user.id },
+      })
+    }
+
+    if (status === 'PROCESSING') {
+      await prisma.publishingJob.create({
+        data: { postId: id, jobType: 'GENERATE_DESIGN', status: 'PENDING' },
+      })
+    }
 
     await writeAuditLog({
       userId: actor.user.id,
       action: AuditAction.POST_UPDATED,
       entityType: 'post',
       entityId: id,
-      metadata: { action: 'design', templateId },
+      metadata: { action: 'design-queued', templateId },
       ipAddress: actor.ip,
     })
 
-    return serializePostDetail(post)
+    return this.detail(id)
   }
 
   async approve(id: string, actor: { user: AuthenticatedUser; ip: string }) {

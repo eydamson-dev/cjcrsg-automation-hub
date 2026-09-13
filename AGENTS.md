@@ -151,10 +151,40 @@ DRAFT/READY -> ARCHIVED
 
 ## Internal and n8n API
 
-- Private endpoints live under `/api/v1/internal/jobs/*`.
-- Requests are signed with HMAC-SHA256 over the body, timestamp, and request id.
-- Headers: `X-Signature`, `X-Timestamp`, `X-Request-Id`.
-- n8n reads the shared secret from `INTERNAL_API_SECRET`.
+- Private endpoints live under `/api/v1/internal/jobs/*` and
+  `/api/v1/internal/scheduler/*`. They use the `internal` middleware only — no
+  session auth.
+- Requests are signed with HMAC-SHA256. The protocol is decided:
+  - Canonical string: `METHOD\n<pathname>\n<X-Timestamp>\n<X-Request-Id>\n<canonicalBody>`.
+  - `canonicalBody` is `JSON.stringify` of a recursively key-sorted copy of the
+    parsed JSON body, empty string when there is no body (the bodyparser never
+    exposes the raw body for parsed JSON, so signing works on the canonical
+    form; both sides implement `stableStringify` in `app/services/hmac.ts`).
+  - `X-Signature` is lowercase hex `HMAC-SHA256(INTERNAL_API_SECRET, canonical)`.
+  - `X-Timestamp` must be within ±`INTERNAL_API_TIMESTAMP_WINDOW` (default 300s).
+  - `X-Request-Id` is required.
+- Endpoints: `GET /jobs/next?jobType=` (claim, 204 when idle), `POST /jobs/design`,
+  `POST /jobs/publish`, `POST /jobs/result`, `GET /scheduler/due`,
+  `POST /scheduler/enqueue`.
+- n8n reads the shared secret from `INTERNAL_API_SECRET`, the API base from
+  `N8N_API_BASE`, and imports workflows from `n8n/workflows` via
+  `infrastructure/scripts/import-n8n.sh`.
+
+## Mock providers and jobs
+
+- Mock Canva and mock Facebook live in the API at `app/services/providers/`
+  behind the `CanvasProvider` and `FacebookProvider` interfaces. n8n drives them
+  over HTTP; the API owns job state and the provider abstraction.
+- `MOCK_DESIGN_FAIL_ON_ATTEMPT` and `MOCK_FACEBOOK_FAIL_ON_ATTEMPT` (0 = always
+  succeed) fail every attempt below the threshold to exercise the retry path.
+- Design generation is async: `POST /posts/:id/design` enqueues a
+  `GENERATE_DESIGN` job and leaves the post in `PROCESSING`. `DESIGN_READY` is
+  set by the internal design job. A `PROCESSING` post with a FAILED design job
+  can be re-triggered from the dashboard.
+- Auto-retry is decided and implemented at claim time in
+  `app/domain/retry_policy.ts`: delays are 1 minute, 5 minutes, 30 minutes,
+  then manual, and only for jobs with `attempts < maxAttempts`. `publish.json`
+  polling `/jobs/publish` picks up both manual and auto retries.
 
 ## Defaults in use
 
@@ -162,6 +192,8 @@ These are assumptions and easy to change.
 
 - Next.js latest stable, App Router.
 - Retry backoff: 1 minute, 5 minutes, 30 minutes, then manual. At most 5 attempts.
+  Auto-retry is evaluated in `claim()`, not by n8n timers. The `posts` table
+  carries `published_at` as a denormalized first-publication cache only.
 - Scheduler runs every 60 seconds, configurable.
 - The backend generates the idempotency key. It stores the key on
   `publishing_jobs` and `post_publications`, and dedupes on `external_post_id`
@@ -177,9 +209,11 @@ Verify these during implementation. Do not decide them silently.
 - Canva Pro design and export workflow without Autofill. Verify against the
   Canva Connect API.
 - Meta Graph API version, OAuth flow, permissions, Page token lifecycle, app review.
-- HMAC signing protocol details.
 - Proxmox storage mount method: ZFS dataset, dedicated disk, or bind mount.
 - Bible source is manual entry for v1. Any future API or licensing is out of scope.
+- Whether a FAILED post needs an edit path after retry exhaustion. Process:
+  `POST /posts/:id/design` while PROCESSING with a FAILED design job is the
+  design retry path; publish retries go through dashboard retry or auto-retry.
 
 ## V1 acceptance scope
 

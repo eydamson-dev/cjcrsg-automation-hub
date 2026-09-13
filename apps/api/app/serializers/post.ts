@@ -20,6 +20,7 @@ function toSummary(post: Post): PostSummary {
     title: post.title,
     caption: post.caption,
     scheduledAt: post.scheduledAt,
+    publishedAt: post.publishedAt,
     templateId: post.templateId,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,

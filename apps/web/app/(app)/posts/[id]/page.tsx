@@ -14,12 +14,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export default function PostDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const queryClient = useQueryClient()
-  const post = useQuery({ queryKey: ['post', id], queryFn: () => postsApi.get(id) })
+  const post = useQuery({
+    queryKey: ['post', id],
+    queryFn: () => postsApi.get(id),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return status === 'PROCESSING' || status === 'PUBLISHING' ? 5000 : false
+    },
+  })
 
   const design = useMutation({
     mutationFn: () => postsApi.design(id, post.data!.templateId!),
     onSuccess: () => {
-      toast.success('Design generated')
+      toast.success('Design queued')
       queryClient.invalidateQueries({ queryKey: ['post', id] })
     },
     onError: (err: Error) => toast.error(err.message),
@@ -29,7 +36,13 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
   if (post.isError) return <p className="text-destructive">{(post.error as Error).message}</p>
 
   const item = post.data!
-  const canDesign = item.status === 'DRAFT' || item.status === 'READY'
+  const failedDesignJob = item.jobs.some(
+    (job) => job.jobType === 'GENERATE_DESIGN' && job.status === 'FAILED'
+  )
+  const canDesign =
+    item.status === 'DRAFT' ||
+    item.status === 'READY' ||
+    (item.status === 'PROCESSING' && failedDesignJob)
 
   return (
     <div className="space-y-6">

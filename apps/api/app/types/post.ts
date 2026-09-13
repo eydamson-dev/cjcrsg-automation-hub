@@ -7,6 +7,7 @@ export interface PostSummary {
   title: string | null
   caption: string | null
   scheduledAt: Date | null
+  publishedAt: Date | null
   templateId: string | null
   createdAt: Date
   updatedAt: Date

@@ -21,4 +21,5 @@ export const middleware = router.named({
   auth: () => import('#middleware/auth_middleware'),
   admin: () => import('#middleware/admin_middleware'),
   editor: () => import('#middleware/editor_middleware'),
+  internal: () => import('#middleware/internal_auth_middleware'),
 })

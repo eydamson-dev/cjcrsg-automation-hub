@@ -25,4 +25,10 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   SEED_ADMIN_EMAIL: Env.schema.string.optional(),
   SEED_ADMIN_PASSWORD: Env.schema.string.optional(),
+
+  INTERNAL_API_SECRET: Env.schema.string(),
+  INTERNAL_API_TIMESTAMP_WINDOW: Env.schema.number.optional(),
+
+  MOCK_DESIGN_FAIL_ON_ATTEMPT: Env.schema.number.optional(),
+  MOCK_FACEBOOK_FAIL_ON_ATTEMPT: Env.schema.number.optional(),
 })

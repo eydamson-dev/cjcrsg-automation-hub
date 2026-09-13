@@ -71,6 +71,17 @@ router
       })
       .use([middleware.auth(), middleware.admin()])
 
+    router
+      .group(() => {
+        router.get('/internal/jobs/next', '#controllers/internal_jobs_controller.next')
+        router.post('/internal/jobs/design', '#controllers/internal_jobs_controller.design')
+        router.post('/internal/jobs/publish', '#controllers/internal_jobs_controller.publish')
+        router.post('/internal/jobs/result', '#controllers/internal_jobs_controller.result')
+        router.get('/internal/scheduler/due', '#controllers/internal_jobs_controller.due')
+        router.post('/internal/scheduler/enqueue', '#controllers/internal_jobs_controller.enqueue')
+      })
+      .use(middleware.internal())
+
     router.get('/', () => {
       return { version: 'v1' }
     })
