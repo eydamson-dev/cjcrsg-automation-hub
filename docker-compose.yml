@@ -43,8 +43,26 @@ services:
     ports:
       - "3333:3333"
 
-  # TODO(M1): web, Next.js. Add a Dockerfile and service entry.
-  # TODO(M1): cloudflared. Cloudflare Tunnel to expose web and n8n.
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        API_URL: http://api:3333
+    container_name: social-manager-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      API_URL: http://api:3333
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "3000:3000"
+
+  # TODO(M6): cloudflared. Cloudflare Tunnel to expose web and n8n.
 
   n8n:
     image: n8nio/n8n:latest

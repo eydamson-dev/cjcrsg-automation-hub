@@ -70,8 +70,9 @@ it once in Postgres, then provide `apps/api/.env.test` (gitignored; mirror
 `apps/api/.env.example` with `DATABASE_URL` pointing at the test DB). The test
 runner migrates and truncates that DB automatically.
 
-These commands are placeholders until the apps are scaffolded in M2 and M4.
-Update them as those land.
+The web app reads `API_URL` (the backend origin it proxies `/api/*` to) at
+build time, so pass it as a build arg when containerizing:
+`docker compose build --build-arg API_URL=http://api:3333 web`.
 
 ## Repo layout
 
