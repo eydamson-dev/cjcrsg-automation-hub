@@ -38,6 +38,8 @@ services:
       STORAGE_ROOT: /data/social-manager
       SESSION_COOKIE_NAME: sm_session
       SESSION_LIFETIME: ${SESSION_LIFETIME:-30}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@example.com}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-change-me}
     volumes:
       - media_data:/data/social-manager
     ports:
