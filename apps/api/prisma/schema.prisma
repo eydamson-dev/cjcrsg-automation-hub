@@ -111,6 +111,7 @@ model Post {
   title       String?
   caption     String?
   scheduledAt DateTime?  @map("scheduled_at")
+  templateId  String?    @map("template_id") @db.Uuid
   createdBy   String?    @map("created_by") @db.Uuid
   updatedBy   String?    @map("updated_by") @db.Uuid
   createdAt   DateTime   @default(now()) @map("created_at")
@@ -118,6 +119,7 @@ model Post {
 
   creator     User?       @relation("posts_created", fields: [createdBy], references: [id])
   updater     User?       @relation("posts_updated", fields: [updatedBy], references: [id])
+  template    CanvaTemplate? @relation(fields: [templateId], references: [id])
   bibleVerse  BibleVersePost?
   postAssets  PostAsset[]
   publications PostPublication[]
@@ -188,6 +190,7 @@ model CanvaTemplate {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   thumbnail        Asset?   @relation(fields: [thumbnailAssetId], references: [id])
+  posts            Post[]
 
   @@map("canva_templates")
 }
