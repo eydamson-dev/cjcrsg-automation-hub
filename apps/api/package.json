@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "db:migrate:dev": "prisma migrate dev"
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "node ace db:seed"
   },
   "imports": {
     "#controllers/*": "./app/controllers/*.js",
@@ -26,6 +27,9 @@
     "#providers/*": "./providers/*.js",
     "#services/*": "./app/services/*.js",
     "#validators/*": "./app/validators/*.js",
+    "#utils/*": "./app/utils/*.js",
+    "#types/*": "./app/types/*.js",
+    "#domain/*": "./app/domain/*.js",
     "#db/*": "./app/db/*.js",
     "#start/*": "./start/*.js",
     "#config/*": "./config/*.js",
@@ -34,6 +38,7 @@
   "dependencies": {
     "@adonisjs/core": "^7.5.0",
     "@adonisjs/cors": "^3.0.0",
+    "@node-rs/argon2": "^2.2.1",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.10.0",
     "@vinejs/vine": "^4.4.0",

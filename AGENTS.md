@@ -58,10 +58,17 @@ pnpm dev:web        # apps/web, Next.js
 pnpm -r build       # build all packages and apps
 pnpm -r lint
 pnpm -r typecheck
+pnpm test           # apps/api tests (unit + functional, against social_manager_test)
 pnpm db:generate    # prisma generate
 pnpm db:migrate     # prisma migrate deploy
 pnpm db:migrate:dev # prisma migrate dev (local, creates migrations)
+pnpm db:seed        # upsert the initial admin from SEED_ADMIN_*
 ```
+
+The API tests target a dedicated `cjcrsg_social_manager_test` database. Create
+it once in Postgres, then provide `apps/api/.env.test` (gitignored; mirror
+`apps/api/.env.example` with `DATABASE_URL` pointing at the test DB). The test
+runner migrates and truncates that DB automatically.
 
 These commands are placeholders until the apps are scaffolded in M2 and M4.
 Update them as those land.

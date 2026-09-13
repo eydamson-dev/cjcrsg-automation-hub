@@ -16,4 +16,13 @@ export default await Env.create(new URL('../', import.meta.url), {
   APP_URL: Env.schema.string({ format: 'url', tld: false }),
 
   DATABASE_URL: Env.schema.string(),
+
+  SESSION_COOKIE_NAME: Env.schema.string(),
+  SESSION_LIFETIME: Env.schema.number(),
+
+  STORAGE_DRIVER: Env.schema.enum(['local' as const]),
+  STORAGE_ROOT: Env.schema.string(),
+
+  SEED_ADMIN_EMAIL: Env.schema.string.optional(),
+  SEED_ADMIN_PASSWORD: Env.schema.string.optional(),
 })
